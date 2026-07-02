@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: krishnaverse-ai
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app --workers 1 --threads 8 --timeout 60 --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: VERIFY_TOKEN
+        sync: false
+      - key: APP_SECRET
+        sync: false
+      - key: PAGE_ID
+        sync: false
+      - key: OWN_ACCOUNT_ID
+        sync: false
+      - key: GRAPH_ACCESS_TOKEN
+        sync: false
+      - key: INSTAGRAM_LOGIN_ACCESS_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_ADMIN_CHAT_IDS
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEYS
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: DB_POOL_MIN
+        value: "2"
+      - key: DB_POOL_MAX
+        value: "10"
+      - key: AI_CACHE_TTL_SECONDS
+        value: "1800"
+      - key: AI_CACHE_MAXSIZE
+        value: "2000"
+      - key: MAX_IMAGE_BYTES
+        value: "4194304"
+      - key: DB_CLEANUP_DAYS
+        value: "7"
+      - key: MAINTENANCE_INTERVAL_SECONDS
+        value: "300"
