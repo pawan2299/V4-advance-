@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrishnaVerse AI Bot Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f8f9ff, #f0e6ff);
+            color: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(100, 60, 180, 0.08), 0 2px 8px rgba(0,0,0,0.04);
+            padding: 40px;
+            max-width: 820px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            left: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255,223,0,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #4a0e7b;
+            margin-bottom: 8px;
+        }
+        .header .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .status-badge.online {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status-badge.offline {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .online .status-dot { background: #4caf50; }
+        .offline .status-dot { background: #f44336; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .env-tag {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: #f3e5f5;
+            color: #7b1fa2;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #4a0e7b;
+            margin: 28px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f3e5f5;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+        .card {
+            background: #fafafa;
+            border: 1px solid #f0f0f0;
+            border-radius: 14px;
+            padding: 20px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .card .label {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .card .value {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .card .value.text-value {
+            font-size: 1em;
+            font-weight: 600;
+        }
+        .card .value.ok { color: #2e7d32; }
+        .card .value.warn { color: #f57f17; }
+        .card .value.err { color: #c62828; }
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 0.85em;
+            color: #999;
+        }
+        .footer a { color: #7b1fa2; text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>KrishnaVerse AI</h1>
+            {% if status.status == "KrishnaVerse AI is live" %}
+                <div class="status-badge online">
+                    <span class="status-dot"></span> Online
+                </div>
+            {% else %}
+                <div class="status-badge offline">
+                    <span class="status-dot"></span> Offline
+                </div>
+            {% endif %}
+            <div class="env-tag">{{ status.environment }}</div>
+        </div>
+
+        <div class="section-title">System Health</div>
+        <div class="grid">
+            <div class="card">
+                <div class="label">Database</div>
+                <div class="value text-value {{ 'ok' if status.database == 'ok' else 'err' }}">{{ status.database }}</div>
+            </div>
+            <div class="card">
+                <div class="label">Bot</div>
+                <div class="value text-value {{ 'warn' if status.paused else 'ok' }}">{{ 'Paused' if status.paused else 'Running' }}</div>
+            </div>
+            <div class="card">
+                <div class="label">Safe Mode</div>
+                <div class="value text-value {{ 'warn' if status.safe_mode else 'ok' }}">{{ 'Active' if status.safe_mode else 'Off' }}</div>
+            </div>
+            <div class="card">
+                <div class="label">Gemini AI</div>
+                <div class="value text-value {{ 'ok' if status.stats.gemini_enabled else 'err' }}">{{ 'Enabled' if status.stats.gemini_enabled else 'Disabled' }}</div>
+            </div>
+        </div>
+
+        <div class="section-title">Statistics (All Time)</div>
+        <div class="grid">
+            <div class="card">
+                <div class="label">Comments Replied</div>
+                <div class="value">{{ status.stats.comments_replied }}</div>
+            </div>
+            <div class="card">
+                <div class="label">Welcome DMs Sent</div>
+                <div class="value">{{ status.stats.welcome_dms_sent }}</div>
+            </div>
+            <div class="card">
+                <div class="label">Events Processed</div>
+                <div class="value">{{ status.stats.processed_events }}</div>
+            </div>
+            <div class="card">
+                <div class="label">AI Calls (24h)</div>
+                <div class="value">{{ status.stats.ai_calls_24h }}</div>
+            </div>
+            <div class="card">
+                <div class="label">Keywords</div>
+                <div class="value">{{ status.stats.keywords }}</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            KrishnaVerse AI &middot; Telegram Admin Panel for details
+        </div>
+    </div>
+</body>
+</html>
