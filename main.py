@@ -5,8 +5,9 @@ import threading
 import time
 import atexit
 import signal
+from concurrent.futures import ThreadPoolExecutor
 
-from flask import Flask, jsonify, request, render_template, abort
+from flask import Flask, jsonify, request, render_template, abort, g
 
 from bot_logic import handle_comment, handle_new_follower
 from config import SETTINGS
@@ -20,15 +21,28 @@ from health import run_all_checks
 from tasks import start_background_tasks, stop_background_tasks
 from utils import METRICS
 
+
+class RequestIDFilter(logging.Filter):
+    """Add request_id to log records for correlation."""
+    def filter(self, record):
+        try:
+            record.request_id = getattr(g, 'request_id', 'main')
+        except RuntimeError:
+            # Outside request context (e.g., startup/shutdown)
+            record.request_id = 'system'
+        return True
+
+
 logging.basicConfig(
     level=getattr(logging, SETTINGS.log_level.upper(), logging.INFO),
     format="%(asctime)s | %(levelname)s | %(name)s | %(request_id)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
+logger.addFilter(RequestIDFilter())
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB
-_executor = threading.ThreadPoolExecutor(max_workers=4)
+_executor = ThreadPoolExecutor(max_workers=4)
 _init_lock = threading.Lock()
 _init_done = False
 
