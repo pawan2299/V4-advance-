@@ -21,10 +21,23 @@ from health import run_all_checks
 from tasks import start_background_tasks, stop_background_tasks
 from utils import METRICS
 
+
+class _RequestIdFilter(logging.Filter):
+    """Injects request_id from Flask context into log records."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            from flask import g, has_request_context
+            record.request_id = g.request_id if has_request_context() and hasattr(g, "request_id") else "-"
+        except Exception:
+            record.request_id = "-"
+        return True
+
+
 logging.basicConfig(
     level=getattr(logging, SETTINGS.log_level.upper(), logging.INFO),
     format="%(asctime)s | %(levelname)s | %(name)s | %(request_id)s | %(message)s",
 )
+logging.getLogger().addFilter(_RequestIdFilter())
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
