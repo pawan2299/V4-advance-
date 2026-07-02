@@ -5,6 +5,7 @@ import threading
 import time
 import atexit
 import signal
+from concurrent.futures import ThreadPoolExecutor
 
 from flask import Flask, jsonify, request, render_template, abort
 
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB
-_executor = threading.ThreadPoolExecutor(max_workers=4)
+_executor = ThreadPoolExecutor(max_workers=4)
 _init_lock = threading.Lock()
 _init_done = False
 
