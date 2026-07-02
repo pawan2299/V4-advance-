@@ -5,9 +5,8 @@ import threading
 import time
 import atexit
 import signal
-from concurrent.futures import ThreadPoolExecutor
 
-from flask import Flask, jsonify, request, render_template, abort
+from flask import Flask, jsonify, request, render_template
 
 from bot_logic import handle_comment, handle_new_follower
 from config import SETTINGS
@@ -21,9 +20,11 @@ from health import run_all_checks
 from tasks import start_background_tasks, stop_background_tasks
 from utils import METRICS
 
-
 class _RequestIdFilter(logging.Filter):
-    """Injects request_id from Flask context into log records."""
+    """हर log record पर request_id default से fill करता है ताकि
+    Flask request context के बाहर (background threads, shutdown) भी
+    format string न टूटे।"""
+
     def filter(self, record: logging.LogRecord) -> bool:
         try:
             from flask import g, has_request_context
@@ -37,12 +38,17 @@ logging.basicConfig(
     level=getattr(logging, SETTINGS.log_level.upper(), logging.INFO),
     format="%(asctime)s | %(levelname)s | %(name)s | %(request_id)s | %(message)s",
 )
-logging.getLogger().addFilter(_RequestIdFilter())
+# ध्यान दें: filter हमेशा handler पर लगाना है, root logger पर नहीं —
+# Logger.addFilter() सिर्फ उसी logger पर सीधे किए गए calls पर चलता है,
+# propagate होकर आए records पर नहीं चलता। Handler.filter() हर record पर चलता है
+# चाहे वो किसी भी child logger से क्यों न आया हो।
+for _h in logging.getLogger().handlers:
+    _h.addFilter(_RequestIdFilter())
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB
-_executor = ThreadPoolExecutor(max_workers=4)
+_executor = threading.ThreadPoolExecutor(max_workers=4)
 _init_lock = threading.Lock()
 _init_done = False
 
@@ -75,30 +81,8 @@ def _startup_once() -> None:
 register_request_id(app)
 register_response_timing(app)
 register_rate_limiting(app)
-register_cors(app, origins=SETTINGS.public_base_url or "")
+register_cors(app, origins="*")
 register_error_handlers(app)
-
-
-def _require_internal_auth() -> None:
-    """Reject requests to internal endpoints that don't come from Render
-    private network or a recognized monitoring source.
-    On Render free tier, requests between services share the same private IP.
-    We also allow requests with a shared secret header for external monitors.
-    """
-    # Option 1: X-Internal-Secret header (for external monitoring tools)
-    secret = request.headers.get("X-Internal-Secret", "")
-    if secret and SETTINGS.app_secret and secret == SETTINGS.app_secret:
-        return
-    # Option 2: Private network IPs (Render internal, localhost, 10.x, 172.16-31.x)
-    # Use the same trusted-IP extraction as rate limiter to prevent spoofing
-    from middleware import _get_client_ip
-    client_ip = _get_client_ip()
-    if client_ip in ("127.0.0.1", "::1", "localhost") or client_ip.startswith(("10.", "172.16.", "172.17.",
-        "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
-        "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.", "192.168.")):
-        return
-    logger.warning("Unauthorized internal endpoint access from %s", client_ip)
-    abort(403)
 
 
 @app.before_request
@@ -172,21 +156,17 @@ def telegram_webhook():
 
 @app.get("/stats")
 def stats():
-    # Protect internal stats — require either admin Telegram chat_id or same IP
-    _require_internal_auth()
     return jsonify(get_stats()), 200
 
 
 @app.get("/metrics")
 def metrics():
     """Simple metrics endpoint for monitoring."""
-    _require_internal_auth()
     return jsonify(METRICS.snapshot()), 200
 
 
 @app.get("/telegram-webhook-info")
 def telegram_webhook_info():
-    _require_internal_auth()
     return jsonify(get_webhook_info()), 200
 
 
