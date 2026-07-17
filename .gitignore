@@ -1,19 +1,23 @@
-```
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.egg-info/
 
-# Environment variables
-.env
-.env.test
-
-# Dependencies
+# Environments
 venv/
 .venv/
+.env
+.env.test
 .env*
 
-# Logs
+# Notebooks / outputs
+*.ipynb_checkpoints
+outputs/
+temp/
 *.log
-```
+
+# OS
+.DS_Store
+Thumbs.db
